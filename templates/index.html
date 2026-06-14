@@ -976,6 +976,15 @@
               </div>` : ''}
             </div>
             ${winnerLine}
+            ${m.live_signal?.signal ? `
+            <div class="mt-2 rounded-xl px-3 py-2.5 flex items-start gap-2" style="background:${m.live_signal.strength==='high' ? 'rgba(16,185,129,0.1)' : 'rgba(201,168,76,0.08)'};border:1px solid ${m.live_signal.strength==='high' ? 'rgba(16,185,129,0.3)' : 'rgba(201,168,76,0.25)'}">
+              <span class="text-base">⚡</span>
+              <div>
+                <p class="text-xs font-bold ${m.live_signal.strength==='high' ? 'text-emerald-400' : 'text-yellow-400'} uppercase tracking-wide">Bet Window${m.live_signal.strength==='high' ? ' — Strong' : ''}</p>
+                <p class="text-xs text-gray-300 mt-0.5">${m.live_signal.reason}</p>
+                ${m.live_signal.bet_on ? `<p class="text-xs font-bold text-white mt-1">→ Consider: ${m.live_signal.bet_on}</p>` : ''}
+              </div>
+            </div>` : ''}
             ${!m.is_final ? `
             <button class="tennis-bet-btn mt-3 w-full py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95"
               style="background:rgba(79,70,229,0.12);border:1px solid rgba(79,70,229,0.25);color:#a5b4fc"

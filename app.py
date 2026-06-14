@@ -5,6 +5,7 @@ from predictor import get_predictions, get_value_bets
 from odds_client import get_events, get_player_props, get_game_props, SPORT_KEYS
 from db import init_db, save_predictions, get_history, place_bet, settle_bet, get_bets, get_stats
 from data_sources.espn import get_match_squads, get_live_scores, get_tennis_matches
+from data_sources.tennis_signals import analyze_live_signal
 
 load_dotenv()
 
@@ -171,7 +172,10 @@ def squad():
 @app.route("/api/tennis-matches")
 def tennis_matches_route():
     try:
-        return jsonify(get_tennis_matches())
+        matches = get_tennis_matches()
+        for m in matches:
+            m["live_signal"] = analyze_live_signal(m)
+        return jsonify(matches)
     except Exception as e:
         return _api_error(e)
 
