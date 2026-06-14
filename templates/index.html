@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>VANTAGE — Sports Intelligence</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --gold: #c9a84c;
+      --gold-dim: rgba(201,168,76,0.15);
+      --gold-border: rgba(201,168,76,0.25);
+      --bg: #06080f;
+      --surface: #0c0f1a;
+      --surface2: #111520;
+      --border: rgba(255,255,255,0.06);
+      --text-muted: #5a6278;
+    }
+    * { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background: var(--bg); padding-bottom: env(safe-area-inset-bottom); color: #e8e6df; }
+
+    .brand { font-family: 'Playfair Display', serif; letter-spacing: 0.12em; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 16px rgba(0,0,0,0.5);
+    }
+
+    .bottom-nav {
+      background: rgba(6,8,15,0.97);
+      border-top: 1px solid var(--border);
+      backdrop-filter: blur(20px);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .nav-item { color: var(--text-muted); transition: color 0.15s; }
+    .nav-item.active { color: var(--gold); }
+    .nav-item.active .nav-dot { opacity: 1; }
+    .nav-dot { opacity: 0; width: 4px; height: 4px; background: var(--gold); border-radius: 9999px; margin: 2px auto 0; transition: opacity 0.15s; }
+
+    .confidence-bar {
+      background: linear-gradient(90deg, var(--gold), #a07830);
+      border-radius: 9999px;
+      height: 3px;
+      transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    .badge { background: var(--gold-dim); border: 1px solid var(--gold-border); color: var(--gold); }
+
+    .over-badge { background: rgba(16,185,129,0.10); border: 1px solid rgba(16,185,129,0.2); color: #34d399; }
+    .under-badge { background: rgba(220,60,60,0.10); border: 1px solid rgba(220,60,60,0.2); color: #f87171; }
+
+    .odds-tile { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px; }
+    .odds-tile.pick { border-color: var(--gold-border); background: var(--gold-dim); }
+
+    .section-btn {
+      background: linear-gradient(90deg, rgba(201,168,76,0.06), transparent);
+      border-left: 2px solid var(--gold);
+    }
+
+    .skeleton {
+      background: linear-gradient(90deg, #111520 25%, #1a1f30 50%, #111520 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.8s infinite;
+      border-radius: 10px;
+    }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+    .prop-row { transition: background 0.1s; border-bottom: 1px solid var(--border); }
+    .prop-row:active { background: var(--gold-dim); }
+
+    .value-card {
+      background: linear-gradient(135deg, rgba(16,185,129,0.06), rgba(5,150,105,0.03));
+      border: 1px solid rgba(16,185,129,0.2);
+    }
+    .value-card.yellow {
+      background: linear-gradient(135deg, rgba(201,168,76,0.07), rgba(160,120,48,0.03));
+      border-color: var(--gold-border);
+    }
+    .edge-badge-green { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: #34d399; }
+    .edge-badge-yellow { background: var(--gold-dim); border: 1px solid var(--gold-border); color: var(--gold); }
+    .form-w { color: #34d399; font-weight: 700; }
+    .form-d { color: #6b7280; font-weight: 600; }
+    .form-l { color: #f87171; font-weight: 700; }
+
+    input, select {
+      background: #0e1120;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      color: #e8e6df;
+      outline: none;
+      -webkit-appearance: none;
+    }
+    input:focus, select:focus { border-color: var(--gold-border); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #b8922a, #9a7620);
+      box-shadow: 0 0 16px rgba(201,168,76,0.2);
+      color: #0c0f1a;
+      font-weight: 700;
+    }
+    .btn-win { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: #34d399; }
+    .btn-loss { background: rgba(220,60,60,0.15); border: 1px solid rgba(220,60,60,0.3); color: #f87171; }
+
+    .divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinning { animation: spin 0.8s linear infinite; display: inline-block; }
+
+    .slide-down { animation: slideDown 0.2s ease-out; }
+    @keyframes slideDown { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+  </style>
+</head>
+<body class="text-white min-h-screen">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-20 px-4 py-3 flex items-center justify-between" style="background:rgba(6,8,15,0.95);backdrop-filter:blur(24px);border-bottom:1px solid rgba(201,168,76,0.12)">
+    <div class="flex items-center gap-3">
+      <div style="width:2px;height:28px;background:linear-gradient(180deg,#c9a84c,transparent);border-radius:2px"></div>
+      <div>
+        <p class="brand text-base font-semibold leading-none tracking-widest" style="color:#c9a84c">VANTAGE</p>
+        <p class="text-xs mt-0.5 tracking-widest uppercase font-medium" style="color:#3d4255;letter-spacing:0.15em">Sports Intelligence</p>
+      </div>
+    </div>
+    <button id="refreshBtn" class="btn-primary flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs tracking-wide uppercase">
+      <span id="refreshIcon">↻</span>
+      <span id="refreshText">Refresh</span>
+    </button>
+  </header>
+
+  <!-- Main scroll area (leaves room for bottom nav) -->
+  <main class="pb-24">
+
+    <!-- Tennis Matches -->
+    <div id="tennisSection" class="hidden">
+      <div class="px-4 pt-4 flex items-center justify-between mb-1">
+        <div class="flex items-center gap-2">
+          <span class="text-sm font-bold" style="color:#c9a84c">🎾 Live Tennis</span>
+          <span id="tennisCount" class="text-xs text-gray-500"></span>
+        </div>
+        <span id="tennisTimer" class="text-xs text-gray-600"></span>
+      </div>
+      <div id="tennisLoading" class="px-4 mt-2 hidden"><div class="skeleton h-20 rounded-2xl"></div></div>
+      <div id="tennisCards" class="px-4 pt-2 space-y-3"></div>
+    </div>
+
+    <!-- Value Bets Banner -->
+    <div id="valueBetsSection" class="px-4 pt-4">
+      <div id="valueBetsLoading" class="skeleton h-20 mb-3 hidden"></div>
+      <div id="valueBetsContent"></div>
+    </div>
+
+    <!-- Error -->
+    <div id="error" class="hidden mx-4 mt-4 px-4 py-3 rounded-xl text-sm text-red-400 border border-red-500/20 bg-red-500/10"></div>
+
+    <!-- Skeletons -->
+    <div id="skeletons" class="hidden px-4 pt-4 space-y-3">
+      <div class="skeleton h-64"></div>
+      <div class="skeleton h-64"></div>
+    </div>
+
+    <!-- Predictions -->
+    <div id="cards" class="px-4 pt-4 space-y-3"></div>
+
+    <!-- Player Props -->
+    <div class="px-4 mt-6">
+      <button id="playerPropsToggle" class="section-btn w-full flex items-center justify-between px-4 py-3 rounded-xl mb-3">
+        <div class="flex items-center gap-2">
+          <span class="font-bold text-sm">Player Props</span>
+          <span class="text-xs px-2 py-0.5 rounded-full badge font-medium">NBA O/U</span>
+        </div>
+        <span id="playerPropsChevron" class="text-gray-500 text-xs">▼</span>
+      </button>
+      <div id="playerPropsSection">
+        <div id="playerPropsLoading" class="hidden space-y-3"><div class="skeleton h-32"></div></div>
+        <div id="playerPropsContent" class="space-y-3"></div>
+      </div>
+    </div>
+
+    <!-- Game Props -->
+    <div class="px-4 mt-6">
+      <button id="gamePropsToggle" class="section-btn w-full flex items-center justify-between px-4 py-3 rounded-xl mb-3">
+        <div class="flex items-center gap-2">
+          <span class="font-bold text-sm">Game Props</span>
+          <span class="text-xs px-2 py-0.5 rounded-full badge font-medium">Alt Lines</span>
+        </div>
+        <span id="gamePropsChevron" class="text-gray-500 text-xs">▼</span>
+      </button>
+      <div id="gamePropsSection">
+        <div id="gamePropsLoading" class="hidden space-y-3"><div class="skeleton h-32"></div></div>
+        <div id="gamePropsContent" class="space-y-3"></div>
+      </div>
+    </div>
+
+    <!-- My Bets -->
+    <div class="px-4 mt-6">
+      <button id="myBetsToggle" class="section-btn w-full flex items-center justify-between px-4 py-3 rounded-xl mb-3">
+        <div class="flex items-center gap-2">
+          <span class="font-bold text-sm">My Bets</span>
+          <span class="text-xs px-2 py-0.5 rounded-full badge font-medium">Tracker</span>
+        </div>
+        <span id="myBetsChevron" class="text-gray-500 text-xs">▼</span>
+      </button>
+      <div id="myBetsSection">
+        <div id="statsBar" class="grid grid-cols-2 gap-2 mb-4"></div>
+        <p class="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-2">Pending</p>
+        <div id="pendingBets" class="space-y-2 mb-4">
+          <p class="text-gray-600 text-sm">Track a bet from the predictions above.</p>
+        </div>
+        <p class="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-2">Settled</p>
+        <div id="settledBets" class="space-y-2">
+          <p class="text-gray-600 text-sm">No settled bets yet.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div class="px-4 mt-6 mb-4">
+      <button id="historyToggle" class="section-btn w-full flex items-center justify-between px-4 py-3 rounded-xl mb-3">
+        <span class="font-bold text-sm">Prediction History</span>
+        <span id="historyChevron" class="text-gray-500 text-xs">▼</span>
+      </button>
+      <div id="historySection">
+        <div id="history" class="space-y-2">
+          <p class="text-gray-600 text-sm">Hit Refresh to log predictions.</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav fixed bottom-0 left-0 right-0 z-20 flex justify-around py-2">
+    <button data-sport="nba" class="nav-item active flex flex-col items-center px-2 py-1 min-w-0">
+      <span class="text-xs font-bold tracking-widest uppercase">NBA</span>
+      <div class="nav-dot"></div>
+    </button>
+    <button data-sport="nfl" class="nav-item flex flex-col items-center px-2 py-1 min-w-0">
+      <span class="text-xs font-bold tracking-widest uppercase">NFL</span>
+      <div class="nav-dot"></div>
+    </button>
+    <button data-sport="soccer" class="nav-item flex flex-col items-center px-2 py-1 min-w-0">
+      <span class="text-xs font-bold tracking-widest uppercase">MLS</span>
+      <div class="nav-dot"></div>
+    </button>
+    <button data-sport="ufc" class="nav-item flex flex-col items-center px-2 py-1 min-w-0">
+      <span class="text-xs font-bold tracking-widest uppercase">UFC</span>
+      <div class="nav-dot"></div>
+    </button>
+    <button data-sport="boxing" class="nav-item flex flex-col items-center px-2 py-1 min-w-0">
+      <span class="text-xs font-bold tracking-widest uppercase">BOX</span>
+      <div class="nav-dot"></div>
+    </button>
+    <button data-sport="world_cup" class="nav-item flex flex-col items-center px-2 py-1 min-w-0">
+      <span class="text-xs font-bold tracking-widest uppercase">WC</span>
+      <div class="nav-dot"></div>
+    </button>
+    <button data-sport="tennis" class="nav-item flex flex-col items-center px-2 py-1 min-w-0">
+      <span class="text-xs font-bold tracking-widest uppercase">TEN</span>
+      <div class="nav-dot"></div>
+    </button>
+  </nav>
+
+  <script>
+    let activeSport = 'nba';
+    let prevOdds = {};      // keyed by game id → {home_odds, away_odds}
+    let liveScores = {};    // keyed by "home vs away" → score object
+    const REFRESH_INTERVAL = 90;  // seconds
+    let refreshCountdown = REFRESH_INTERVAL;
+
+    const cardsEl = document.getElementById('cards');
+    const skeletonsEl = document.getElementById('skeletons');
+    const errorEl = document.getElementById('error');
+    const valueBetsContent = document.getElementById('valueBetsContent');
+    const valueBetsLoading = document.getElementById('valueBetsLoading');
+    const playerPropsContent = document.getElementById('playerPropsContent');
+    const playerPropsLoading = document.getElementById('playerPropsLoading');
+    const gamePropsContent = document.getElementById('gamePropsContent');
+    const gamePropsLoading = document.getElementById('gamePropsLoading');
+    const statsBarEl = document.getElementById('statsBar');
+    const pendingBetsEl = document.getElementById('pendingBets');
+    const settledBetsEl = document.getElementById('settledBets');
+    const historyEl = document.getElementById('history');
+
+    const sportEmoji = { nba:'🏀', nfl:'🏈', soccer:'⚽', ufc:'🥊', boxing:'🥋', world_cup:'🏆', tennis:'🎾' };
+    function fmt(o) { return o > 0 ? `+${o}` : `${o}`; }
+    function statIcon(s) {
+      return { Points:'🏀', Rebounds:'💪', Assists:'🎯', '3-Pointers':'🎳', Blocks:'🛡️', Steals:'✋' }[s] || '📊';
+    }
+
+    // ── Value Bets ────────────────────────────────────────────────────────────
+
+    function renderValueBets(bets) {
+      valueBetsContent.innerHTML = '';
+      if (!bets.length) return;
+      const header = document.createElement('div');
+      header.className = 'mb-3 flex items-center gap-2';
+      header.innerHTML = `<span class="text-lg">🔥</span><span class="font-bold text-sm text-emerald-400">${bets.length} Value Bet${bets.length > 1 ? 's' : ''} Found</span><span class="text-xs text-gray-500">— Edge vs market</span>`;
+      valueBetsContent.appendChild(header);
+      bets.forEach(b => {
+        const isHighEdge = b.edge_pct >= 10;
+        const card = document.createElement('div');
+        card.className = `value-card ${isHighEdge ? '' : 'yellow'} rounded-2xl p-4 mb-3`;
+        const edgeClass = isHighEdge ? 'edge-badge-green' : 'edge-badge-yellow';
+        card.innerHTML = `
+          <div class="flex justify-between items-start mb-2">
+            <div>
+              <p class="font-bold text-sm leading-tight">${b.predicted_winner}</p>
+              <p class="text-xs text-gray-400 mt-0.5">${b.home_team} vs ${b.away_team}</p>
+            </div>
+            <span class="${edgeClass} text-xs font-bold px-2 py-1 rounded-full">+${b.edge_pct}% edge</span>
+          </div>
+          <div class="grid grid-cols-3 gap-2 text-center text-xs">
+            <div><p class="text-gray-500">Our prob</p><p class="font-bold text-white">${b.home_win_prob || b.confidence}%</p></div>
+            <div><p class="text-gray-500">Market</p><p class="font-bold text-gray-300">${b.market_prob || '—'}%</p></div>
+            <div><p class="text-gray-500">Kelly stake</p><p class="font-bold ${isHighEdge ? 'text-emerald-400' : 'text-yellow-400'}">${b.kelly_stake_pct}%</p></div>
+          </div>
+          ${b.top_scorelines ? `<p class="text-xs text-gray-500 mt-2">Top score: ${b.top_scorelines[0]?.score} (${b.top_scorelines[0]?.prob}%)</p>` : ''}
+        `;
+        valueBetsContent.appendChild(card);
+      });
+    }
+
+    async function loadValueBets(sport) {
+      valueBetsLoading.classList.remove('hidden');
+      valueBetsContent.innerHTML = '';
+      try {
+        const res = await fetch(`/api/edge-bets/${sport}`);
+        const data = await res.json();
+        if (!data.error) renderValueBets(data);
+      } catch (_) {}
+      finally { valueBetsLoading.classList.add('hidden'); }
+    }
+
+    // ── Predictions ───────────────────────────────────────────────────────────
+
+    function formBadges(form) {
+      if (!form || !form.length) return '';
+      return form.map(r => `<span class="form-${r.toLowerCase()}">${r}</span>`).join(' ');
+    }
+
+    function renderCards(predictions) {
+      cardsEl.innerHTML = '';
+      if (!predictions.length) {
+        cardsEl.innerHTML = `<div class="text-center py-16"><p class="text-4xl mb-3">🏟️</p><p class="text-gray-400 font-medium">No upcoming events</p></div>`;
+        return;
+      }
+      predictions.forEach(p => {
+        const bar = Math.min(Math.max(p.confidence, 0), 100);
+        const isHome = p.predicted_winner === p.home_team;
+        const card = document.createElement('div');
+        card.className = `card rounded-2xl p-4 flex flex-col gap-3${p.is_value ? ' border-emerald-500/20' : ''}`;
+
+        // Line movement detection
+        const gameKey = p.id || `${p.home_team}-${p.away_team}`;
+        const prev = prevOdds[gameKey];
+        let moveHtml = '';
+        if (prev) {
+          const homeDiff = p.home_odds - prev.home_odds;
+          const awayDiff = p.away_odds - prev.away_odds;
+          const moved = Math.abs(homeDiff) >= 3 || Math.abs(awayDiff) >= 3;
+          if (moved) {
+            const dir = homeDiff > 0 ? `${p.home_team} drifting out` : `${p.home_team} steaming in`;
+            moveHtml = `<div class="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold" style="background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.25);color:#c9a84c">⚡ Line move — ${dir}</div>`;
+          }
+        }
+        prevOdds[gameKey] = { home_odds: p.home_odds, away_odds: p.away_odds };
+
+        // Live score overlay
+        const scoreKey1 = `${p.home_team} vs ${p.away_team}`.toLowerCase();
+        const scoreKey2 = `${p.away_team} vs ${p.home_team}`.toLowerCase();
+        const sc = liveScores[scoreKey1] || liveScores[scoreKey2];
+        let scoreHtml = '';
+        if (sc && sc.is_live) {
+          scoreHtml = `<div class="flex items-center justify-between px-3 py-2 rounded-lg" style="background:rgba(220,38,38,0.08);border:1px solid rgba(220,38,38,0.2)">
+            <span class="text-xs font-bold text-red-400 uppercase tracking-widest animate-pulse">● LIVE ${sc.period_label}</span>
+            <span class="text-sm font-bold text-white">${sc.home_score} – ${sc.away_score}</span>
+          </div>`;
+        } else if (sc && sc.is_final) {
+          scoreHtml = `<div class="flex items-center justify-between px-3 py-2 rounded-lg" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06)">
+            <span class="text-xs font-semibold text-gray-500 uppercase tracking-widest">Final</span>
+            <span class="text-sm font-bold text-gray-300">${sc.home_score} – ${sc.away_score}</span>
+          </div>`;
+        }
+
+        card.innerHTML = `
+          ${moveHtml}
+          ${scoreHtml}
+          <div class="flex justify-between items-start">
+            <div class="flex-1 min-w-0 pr-2">
+              <span class="text-xs font-bold uppercase tracking-widest" style="color:var(--gold)">${p.sport.replace('_',' ')}</span>
+              <p class="font-bold text-base mt-0.5 leading-tight">${p.home_team} <span class="text-gray-600 font-normal text-sm">vs</span> ${p.away_team}</p>
+            </div>
+            <span class="badge text-xs font-bold px-2 py-1 rounded-full whitespace-nowrap flex-shrink-0">${p.confidence}%</span>
+          </div>
+
+          <div class="rounded-xl p-3" style="background:rgba(79,70,229,0.08);border:1px solid rgba(79,70,229,0.15)">
+            <p class="text-xs text-gray-500 mb-0.5">Predicted Winner</p>
+            <p class="font-bold text-base" style="color:#818cf8">${p.predicted_winner}</p>
+            <div class="mt-2">
+              <div class="flex justify-between text-xs text-gray-600 mb-1"><span>Confidence</span><span>${p.confidence}%</span></div>
+              <div class="bg-gray-800 rounded-full h-1"><div class="confidence-bar" style="width:${bar}%"></div></div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div class="odds-tile ${isHome ? 'pick' : ''} p-3 text-center">
+              <p class="text-xs text-gray-500 truncate">${p.home_team.split(' ').pop()}</p>
+              <p class="font-bold mt-0.5 ${isHome ? 'text-indigo-400' : 'text-white'}">${fmt(p.home_odds)}</p>
+              <p class="text-xs text-gray-600 mt-0.5">Moneyline</p>
+            </div>
+            <div class="odds-tile ${!isHome ? 'pick' : ''} p-3 text-center">
+              <p class="text-xs text-gray-500 truncate">${p.away_team.split(' ').pop()}</p>
+              <p class="font-bold mt-0.5 ${!isHome ? 'text-indigo-400' : 'text-white'}">${fmt(p.away_odds)}</p>
+              <p class="text-xs text-gray-600 mt-0.5">Moneyline</p>
+            </div>
+            ${p.home_spread != null ? `
+            <div class="odds-tile p-3 text-center">
+              <p class="text-xs text-gray-500 truncate">${p.home_team.split(' ').pop()}</p>
+              <p class="font-bold mt-0.5"><span class="text-yellow-400">${p.home_spread > 0 ? '+' : ''}${p.home_spread}</span></p>
+              <p class="text-xs text-gray-600 mt-0.5">Spread ${fmt(p.home_spread_odds)}</p>
+            </div>
+            <div class="odds-tile p-3 text-center">
+              <p class="text-xs text-gray-500 truncate">${p.away_team.split(' ').pop()}</p>
+              <p class="font-bold mt-0.5"><span class="text-yellow-400">${p.away_spread > 0 ? '+' : ''}${p.away_spread}</span></p>
+              <p class="text-xs text-gray-600 mt-0.5">Spread ${fmt(p.away_spread_odds)}</p>
+            </div>` : ''}
+            ${p.total_points != null ? `
+            <div class="odds-tile over-badge p-3 text-center">
+              <p class="text-xs opacity-70">Over ${p.total_points}</p>
+              <p class="font-bold mt-0.5">${fmt(p.total_over_odds)}</p>
+            </div>
+            <div class="odds-tile under-badge p-3 text-center">
+              <p class="text-xs opacity-70">Under ${p.total_points}</p>
+              <p class="font-bold mt-0.5">${fmt(p.total_under_odds)}</p>
+            </div>` : ''}
+          </div>
+
+          <!-- Intelligence Layer -->
+          ${p.home_xg != null ? `
+          <div class="rounded-xl p-3 space-y-2" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06)">
+            <div class="flex justify-between items-center">
+              <span class="text-xs text-gray-500 font-semibold uppercase tracking-wide">Expected Goals</span>
+              <span class="text-xs text-gray-600">${p.model || ''}</span>
+            </div>
+            <div class="flex justify-between text-sm font-bold">
+              <span>${p.home_team.split(' ').pop()} <span class="text-indigo-400">${p.home_xg}</span></span>
+              <span class="text-gray-600">xG</span>
+              <span><span class="text-indigo-400">${p.away_xg}</span> ${p.away_team.split(' ').pop()}</span>
+            </div>
+            ${p.home_form?.length ? `
+            <div class="flex justify-between text-xs">
+              <span class="text-gray-500">${p.home_team.split(' ').pop()}: <span class="font-mono">${formBadges(p.home_form)}</span></span>
+              <span class="text-gray-500">${p.away_team.split(' ').pop()}: <span class="font-mono">${formBadges(p.away_form)}</span></span>
+            </div>` : ''}
+            ${p.top_scorelines?.length ? `
+            <div class="flex gap-2 flex-wrap">
+              ${p.top_scorelines.slice(0,3).map(s => `<span class="text-xs px-2 py-0.5 rounded-full font-mono" style="background:rgba(79,70,229,0.12);color:#a5b4fc">${s.score} <span class="text-gray-600">${s.prob}%</span></span>`).join('')}
+            </div>` : ''}
+          </div>` : ''}
+
+          ${p.finish_probability != null ? `
+          <div class="rounded-xl px-3 py-2 flex justify-between items-center" style="background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.15)">
+            <span class="text-xs text-gray-400">Finish probability</span>
+            <span class="text-sm font-bold text-red-400">${p.finish_probability}%</span>
+          </div>` : ''}
+
+          ${p.flags?.length ? `
+          <div class="space-y-1">
+            ${p.flags.map(f => `<p class="text-xs text-yellow-400">${f}</p>`).join('')}
+          </div>` : ''}
+
+          ${p.edge_pct > 0 ? `
+          <div class="rounded-xl px-3 py-2 flex justify-between items-center" style="background:${p.is_value ? 'rgba(16,185,129,0.08)' : 'rgba(255,255,255,0.03)'};border:1px solid ${p.is_value ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.06)'}">
+            <div>
+              <span class="text-xs ${p.is_value ? 'text-emerald-400' : 'text-gray-400'} font-semibold">Edge vs market: ${p.edge_pct > 0 ? '+' : ''}${p.edge_pct}%</span>
+              ${p.is_value ? `<span class="ml-2 text-xs font-bold px-1.5 py-0.5 rounded edge-badge-green">VALUE</span>` : ''}
+            </div>
+            ${p.kelly_stake_pct > 0 ? `<span class="text-xs text-gray-400">Kelly: <span class="font-bold text-white">${p.kelly_stake_pct}% stake</span></span>` : ''}
+          </div>` : ''}
+
+          <!-- Track Bet -->
+          <div class="squad-intel-section mt-3" id="squad-${p.home_team.replace(/\s/g,'-')}-${p.away_team.replace(/\s/g,'-')}">
+            <button class="squad-btn w-full py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center justify-center gap-2"
+              style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:#fbbf24"
+              data-home="${p.home_team}" data-away="${p.away_team}">
+              <span>🩺</span> Squad Intel
+            </button>
+            <div class="squad-content hidden mt-2 rounded-xl p-3 space-y-2" style="background:rgba(245,158,11,0.05);border:1px solid rgba(245,158,11,0.15)"></div>
+          </div>
+          <button class="track-bet-btn w-full py-3 rounded-xl text-sm font-bold transition-all active:scale-95 mt-2"
+            style="background:rgba(79,70,229,0.12);border:1px solid rgba(79,70,229,0.25);color:#a5b4fc"
+            data-game='${JSON.stringify({sport:p.sport,home_team:p.home_team,away_team:p.away_team,predicted_winner:p.predicted_winner,home_odds:p.home_odds,away_odds:p.away_odds,commence_time:p.commence_time})}'>
+            + Track Bet
+          </button>
+          <div class="track-form hidden slide-down rounded-xl p-4 space-y-3" style="background:rgba(79,70,229,0.07);border:1px solid rgba(79,70,229,0.2)">
+            <p class="text-xs text-gray-400 font-bold uppercase tracking-wide">Log a Bet</p>
+            <div>
+              <label class="text-xs text-gray-500 mb-1.5 block">Bet On</label>
+              <select class="bet-team w-full px-4 py-3 text-sm font-semibold">
+                <option value="${p.home_team}" data-odds="${p.home_odds}">${p.home_team} (${fmt(p.home_odds)})</option>
+                <option value="${p.away_team}" data-odds="${p.away_odds}">${p.away_team} (${fmt(p.away_odds)})</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 mb-1.5 block">Stake ($)</label>
+              <input type="number" inputmode="decimal" min="1" placeholder="e.g. 50" class="bet-stake w-full px-4 py-3 text-sm font-semibold" />
+            </div>
+            <button class="confirm-bet btn-primary w-full py-3 rounded-xl text-sm font-bold text-white active:scale-95 transition-transform">
+              Confirm Bet
+            </button>
+            <p class="bet-status hidden text-center text-sm font-semibold"></p>
+          </div>
+        `;
+        cardsEl.appendChild(card);
+      });
+    }
+
+    async function loadPredictions(sport) {
+      skeletonsEl.classList.remove('hidden');
+      cardsEl.innerHTML = '';
+      errorEl.classList.add('hidden');
+      try {
+        const res = await fetch(`/api/predictions/${sport}`);
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        renderCards(data);
+      } catch (e) {
+        errorEl.textContent = `Error: ${e.message}`;
+        errorEl.classList.remove('hidden');
+      } finally {
+        skeletonsEl.classList.add('hidden');
+      }
+    }
+
+    // ── Player Props ──────────────────────────────────────────────────────────
+
+    function renderPlayerProps(games) {
+      playerPropsContent.innerHTML = '';
+      if (!games.length) {
+        playerPropsContent.innerHTML = `<div class="text-center py-8 rounded-xl" style="border:1px solid rgba(255,255,255,0.05)"><p class="text-gray-500 text-sm">No player props for this sport</p></div>`;
+        return;
+      }
+      games.forEach(game => {
+        const el = document.createElement('div');
+        el.className = 'card rounded-2xl overflow-hidden';
+        const grouped = {};
+        game.props.forEach(p => { if (!grouped[p.player]) grouped[p.player] = []; grouped[p.player].push(p); });
+        const rows = Object.entries(grouped).map(([player, props]) =>
+          props.map(p => {
+            const rec = p.over_odds >= p.under_odds ? 'over' : 'under';
+            const overStyle = rec === 'over'
+              ? 'background:rgba(16,185,129,0.25);border:2px solid #34d399;color:#34d399;'
+              : 'background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.2);color:#6ee7b7;';
+            const underStyle = rec === 'under'
+              ? 'background:rgba(239,68,68,0.25);border:2px solid #f87171;color:#f87171;'
+              : 'background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);color:#fca5a5;';
+            const recLabel = rec === 'over' ? '▲ BET OVER' : '▼ BET UNDER';
+            return `
+            <div class="prop-row px-4 py-3" style="border-bottom:1px solid rgba(255,255,255,0.04)">
+              <div class="flex justify-between items-center mb-1.5">
+                <div>
+                  <p class="font-semibold text-sm">${player}</p>
+                  <p class="text-xs text-gray-500">${statIcon(p.stat)} ${p.stat} — Line: <span class="text-white font-bold">${p.line}</span></p>
+                </div>
+                <span class="text-xs font-bold px-2 py-1 rounded-lg" style="${rec === 'over' ? 'background:rgba(16,185,129,0.15);color:#34d399;' : 'background:rgba(239,68,68,0.15);color:#f87171;'}">${recLabel}</span>
+              </div>
+              <div class="grid grid-cols-2 gap-2 mt-2">
+                <div class="rounded-lg py-2 text-center text-xs font-bold" style="${overStyle}">Over ${fmt(p.over_odds)}</div>
+                <div class="rounded-lg py-2 text-center text-xs font-bold" style="${underStyle}">Under ${fmt(p.under_odds)}</div>
+              </div>
+            </div>
+          `}).join('')
+        ).join('');
+        el.innerHTML = `
+          <div class="px-4 py-3 flex justify-between items-center" style="background:rgba(255,255,255,0.03);border-bottom:1px solid rgba(255,255,255,0.05)">
+            <p class="font-bold text-sm">${game.home_team} vs ${game.away_team}</p>
+            <span class="text-xs text-gray-500">${game.props.length} props</span>
+          </div>${rows}`;
+        playerPropsContent.appendChild(el);
+      });
+    }
+
+    async function loadPlayerProps(sport) {
+      playerPropsLoading.classList.remove('hidden');
+      playerPropsContent.innerHTML = '';
+      try {
+        const res = await fetch(`/api/player-props/${sport}`);
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        renderPlayerProps(data);
+      } catch (e) {
+        playerPropsContent.innerHTML = `<p class="text-red-400 text-sm">Error: ${e.message}</p>`;
+      } finally {
+        playerPropsLoading.classList.add('hidden');
+      }
+    }
+
+    // ── Game Props ────────────────────────────────────────────────────────────
+
+    function renderGameProps(games) {
+      gamePropsContent.innerHTML = '';
+      if (!games.length) {
+        gamePropsContent.innerHTML = `<div class="text-center py-8 rounded-xl" style="border:1px solid rgba(255,255,255,0.05)"><p class="text-gray-500 text-sm">No game props for this sport</p></div>`;
+        return;
+      }
+      games.forEach(game => {
+        const el = document.createElement('div');
+        el.className = 'card rounded-2xl overflow-hidden';
+        const rows = game.props.map(p => `
+          <div class="prop-row px-4 py-3" style="border-bottom:1px solid rgba(255,255,255,0.04)">
+            <p class="text-sm text-gray-300 mb-2">${p.description}${p.line != null ? ' <span class="text-yellow-400 font-bold">'+p.line+'</span>' : ''}</p>
+            <div class="grid grid-cols-2 gap-2">
+              ${p.over_odds != null ? `<div class="over-badge rounded-lg py-2 text-center text-xs font-bold">Over ${fmt(p.over_odds)}</div>` : '<div></div>'}
+              ${p.under_odds != null ? `<div class="under-badge rounded-lg py-2 text-center text-xs font-bold">Under ${fmt(p.under_odds)}</div>` : '<div></div>'}
+            </div>
+          </div>
+        `).join('');
+        el.innerHTML = `
+          <div class="px-4 py-3 flex justify-between items-center" style="background:rgba(255,255,255,0.03);border-bottom:1px solid rgba(255,255,255,0.05)">
+            <p class="font-bold text-sm">${game.home_team} vs ${game.away_team}</p>
+            <span class="text-xs text-gray-500">${game.props.length} props</span>
+          </div>${rows}`;
+        gamePropsContent.appendChild(el);
+      });
+    }
+
+    async function loadGameProps(sport) {
+      gamePropsLoading.classList.remove('hidden');
+      gamePropsContent.innerHTML = '';
+      try {
+        const res = await fetch(`/api/game-props/${sport}`);
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        renderGameProps(data);
+      } catch (e) {
+        gamePropsContent.innerHTML = `<p class="text-red-400 text-sm">Error: ${e.message}</p>`;
+      } finally {
+        gamePropsLoading.classList.add('hidden');
+      }
+    }
+
+    // ── My Bets ───────────────────────────────────────────────────────────────
+
+    function renderStats(s) {
+      const pc = s.total_profit >= 0 ? '#34d399' : '#f87171';
+      statsBarEl.innerHTML = `
+        <div class="card rounded-xl p-3 text-center"><p class="text-xl font-bold">${s.wins}<span class="text-gray-600">–</span>${s.losses}</p><p class="text-xs text-gray-500 mt-0.5">Record</p></div>
+        <div class="card rounded-xl p-3 text-center"><p class="text-xl font-bold" style="color:${pc}">${s.total_profit >= 0 ? '+' : ''}$${s.total_profit}</p><p class="text-xs text-gray-500 mt-0.5">Profit</p></div>
+        <div class="card rounded-xl p-3 text-center"><p class="text-xl font-bold" style="color:${s.roi >= 0 ? '#34d399' : '#f87171'}">${s.roi >= 0 ? '+' : ''}${s.roi}%</p><p class="text-xs text-gray-500 mt-0.5">ROI</p></div>
+        <div class="card rounded-xl p-3 text-center"><p class="text-xl font-bold" style="color:#818cf8">${s.model_accuracy}%</p><p class="text-xs text-gray-500 mt-0.5">Model Acc.</p></div>
+      `;
+    }
+
+    async function settleBet(id, result) {
+      await fetch(`/api/bets/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ result }),
+      });
+      await loadMyBets();
+    }
+
+    function renderBets(bets) {
+      const pending = bets.filter(b => !b.result);
+      const settled = bets.filter(b => b.result);
+
+      pendingBetsEl.innerHTML = pending.length ? pending.map(b => `
+        <div class="card rounded-xl p-4">
+          <div class="flex items-start justify-between mb-3">
+            <div>
+              <p class="font-bold text-sm">${b.bet_on}</p>
+              <p class="text-xs text-gray-500 mt-0.5">${b.home_team} vs ${b.away_team}</p>
+              <p class="text-xs text-gray-600 mt-0.5">${fmt(b.odds)} · $${b.stake} stake</p>
+            </div>
+            <span class="text-lg">${sportEmoji[b.sport] || '🏟️'}</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="settleBet(${b.id},'win')" class="btn-win py-3 rounded-xl text-sm font-bold active:scale-95 transition-transform">✓ Win</button>
+            <button onclick="settleBet(${b.id},'loss')" class="btn-loss py-3 rounded-xl text-sm font-bold active:scale-95 transition-transform">✗ Loss</button>
+          </div>
+        </div>
+      `).join('') : '<p class="text-gray-600 text-sm">No pending bets.</p>';
+
+      settledBetsEl.innerHTML = settled.length ? settled.map(b => {
+        const win = b.result === 'win';
+        const profit = b.profit >= 0 ? `+$${b.profit}` : `-$${Math.abs(b.profit)}`;
+        return `
+          <div class="card rounded-xl px-4 py-3 flex items-center gap-3">
+            <span class="text-base">${sportEmoji[b.sport] || '🏟️'}</span>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold truncate">${b.bet_on}</p>
+              <p class="text-xs text-gray-500">${fmt(b.odds)} · $${b.stake} · ${b.placed_at.slice(0,10)}</p>
+            </div>
+            <span class="text-xs font-bold px-2 py-1 rounded-full ${win ? 'over-badge' : 'under-badge'}">${win ? 'W' : 'L'}</span>
+            <span class="font-bold text-sm ${b.profit >= 0 ? 'text-emerald-400' : 'text-red-400'}">${profit}</span>
+          </div>`;
+      }).join('') : '<p class="text-gray-600 text-sm">No settled bets yet.</p>';
+    }
+
+    async function loadMyBets() {
+      try {
+        const [betsRes, statsRes] = await Promise.all([fetch('/api/bets'), fetch('/api/stats')]);
+        renderStats(await statsRes.json());
+        renderBets(await betsRes.json());
+      } catch (_) {}
+    }
+
+    // ── History ───────────────────────────────────────────────────────────────
+
+    function renderHistory(rows) {
+      if (!rows.length) { historyEl.innerHTML = '<p class="text-gray-600 text-sm">No history yet.</p>'; return; }
+      historyEl.innerHTML = rows.map(r => `
+        <div class="card rounded-xl px-4 py-3 flex items-center gap-3">
+          <span>${sportEmoji[r.sport] || '🏟️'}</span>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium truncate">${r.home_team} vs ${r.away_team}</p>
+            <p class="text-xs text-gray-500 truncate">${r.predicted_winner} · ${r.confidence}% · ${r.saved_at.slice(0,10)}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function loadHistory() {
+      try { renderHistory(await (await fetch('/api/history')).json()); } catch (_) {}
+    }
+
+    // ── Track Bet ─────────────────────────────────────────────────────────────
+
+    cardsEl.addEventListener('click', async (e) => {
+      const squadBtn = e.target.closest('.squad-btn');
+      if (squadBtn) {
+        const content = squadBtn.nextElementSibling;
+        if (!content.classList.contains('hidden')) { content.classList.add('hidden'); return; }
+        const home = squadBtn.dataset.home;
+        const away = squadBtn.dataset.away;
+        content.innerHTML = '<p class="text-xs text-yellow-500 text-center py-2">Loading squad data...</p>';
+        content.classList.remove('hidden');
+        try {
+          const res = await fetch(`/api/squad?home=${encodeURIComponent(home)}&away=${encodeURIComponent(away)}`);
+          const data = await res.json();
+          if (data.error) throw new Error(data.error);
+          const renderTeam = (t) => {
+            const unavail = t.unavailable || [];
+            const statusBlock = unavail.length
+              ? unavail.map(p => `<div class="flex items-center gap-2 py-1"><span class="text-red-400 text-xs">⚠</span><span class="text-xs text-red-300 font-semibold">${p.name} (${p.position})</span><span class="text-xs text-gray-500">— ${p.status}</span></div>`).join('')
+              : `<p class="text-xs text-emerald-400 font-semibold">✓ Full squad available</p>`;
+            return `<div><p class="text-xs font-bold text-yellow-400 mb-1">${t.team} <span class="text-gray-500 font-normal">(${t.total} players)</span></p>${statusBlock}</div>`;
+          };
+          content.innerHTML = `
+            <p class="text-xs text-yellow-600 font-bold uppercase tracking-wide mb-2">🩺 Squad Intel</p>
+            ${renderTeam(data.home)}
+            <div class="border-t border-yellow-900 my-2"></div>
+            ${renderTeam(data.away)}
+            ${data.clean_bill ? '' : `<div class="mt-2 rounded-lg px-3 py-2 text-xs font-bold text-red-300" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2)">⚠ Check lines — key players may be out</div>`}
+            <p class="text-xs text-gray-600 mt-2 text-center">Source: ESPN · Updated live</p>`;
+        } catch(err) {
+          content.innerHTML = `<p class="text-xs text-gray-500 text-center py-2">Could not load squad data</p>`;
+        }
+        return;
+      }
+
+      const trackBtn = e.target.closest('.track-bet-btn');
+      const confirmBtn = e.target.closest('.confirm-bet');
+
+      if (trackBtn) {
+        const form = trackBtn.nextElementSibling;
+        const wasHidden = form.classList.contains('hidden');
+        form.classList.toggle('hidden');
+        if (wasHidden) form.classList.add('slide-down');
+        return;
+      }
+
+      if (confirmBtn) {
+        const form = confirmBtn.closest('.track-form');
+        const card = form.closest('.card');
+        const game = JSON.parse(card.querySelector('.track-bet-btn').dataset.game);
+        const teamSelect = form.querySelector('.bet-team');
+        const stakeInput = form.querySelector('.bet-stake');
+        const status = form.querySelector('.bet-status');
+        const betOn = teamSelect.value;
+        const odds = parseFloat(teamSelect.selectedOptions[0].dataset.odds);
+        const stake = parseFloat(stakeInput.value);
+
+        if (!stake || stake <= 0) {
+          status.textContent = 'Enter a valid stake amount.';
+          status.className = 'bet-status text-red-400 text-sm font-semibold text-center';
+          status.classList.remove('hidden');
+          return;
+        }
+
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Saving...';
+        try {
+          const res = await fetch('/api/bets', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...game, bet_on: betOn, odds, stake }),
+          });
+          const data = await res.json();
+          if (data.error) throw new Error(data.error);
+          status.textContent = '✓ Bet logged!';
+          status.className = 'bet-status text-emerald-400 text-sm font-semibold text-center';
+          status.classList.remove('hidden');
+          stakeInput.value = '';
+          await loadMyBets();
+        } catch (err) {
+          status.textContent = `Error: ${err.message}`;
+          status.className = 'bet-status text-red-400 text-sm font-semibold text-center';
+          status.classList.remove('hidden');
+        } finally {
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = 'Confirm Bet';
+        }
+      }
+    });
+
+    // ── Refresh ───────────────────────────────────────────────────────────────
+
+    document.getElementById('refreshBtn').addEventListener('click', async () => {
+      const icon = document.getElementById('refreshIcon');
+      const text = document.getElementById('refreshText');
+      icon.className = 'spinning';
+      text.textContent = 'Saving...';
+      try {
+        const res = await fetch(`/api/refresh/${activeSport}`, { method: 'POST' });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        renderCards(data.predictions);
+        await loadHistory();
+      } catch (e) {
+        errorEl.textContent = `Error: ${e.message}`;
+        errorEl.classList.remove('hidden');
+      } finally {
+        icon.className = '';
+        icon.textContent = '↻';
+        text.textContent = 'Refresh';
+      }
+    });
+
+    // ── Bottom Nav ────────────────────────────────────────────────────────────
+
+    document.querySelectorAll('.nav-item').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeSport = btn.dataset.sport;
+        prevOdds = {};
+        liveScores = {};
+        refreshCountdown = REFRESH_INTERVAL;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        const isTennis = activeSport === 'tennis';
+        document.getElementById('tennisSection').classList.toggle('hidden', !isTennis);
+        document.getElementById('valueBetsSection').classList.toggle('hidden', isTennis);
+        document.getElementById('skeletons').classList.toggle('hidden', isTennis);
+        document.getElementById('cards').classList.toggle('hidden', isTennis);
+        if (isTennis) {
+          loadTennisMatches(true);
+          startTennisRefresh();
+        } else {
+          stopTennisRefresh();
+          fetchLiveScores(activeSport);
+          loadValueBets(activeSport);
+          loadPredictions(activeSport);
+          loadPlayerProps(activeSport);
+          loadGameProps(activeSport);
+        }
+      });
+    });
+
+    // ── Collapsibles ──────────────────────────────────────────────────────────
+
+    function makeToggle(btnId, sectionId, chevronId) {
+      document.getElementById(btnId).addEventListener('click', () => {
+        const hidden = document.getElementById(sectionId).classList.toggle('hidden');
+        document.getElementById(chevronId).textContent = hidden ? '▶' : '▼';
+      });
+    }
+    makeToggle('playerPropsToggle', 'playerPropsSection', 'playerPropsChevron');
+    makeToggle('gamePropsToggle', 'gamePropsSection', 'gamePropsChevron');
+    makeToggle('myBetsToggle', 'myBetsSection', 'myBetsChevron');
+    makeToggle('historyToggle', 'historySection', 'historyChevron');
+
+    // ── Live scores fetch ─────────────────────────────────────────────────────
+
+    async function fetchLiveScores(sport) {
+      try {
+        const res = await fetch(`/api/scores/${sport}`);
+        const data = await res.json();
+        liveScores = {};
+        data.forEach(s => {
+          const key = `${s.home_team} vs ${s.away_team}`.toLowerCase();
+          liveScores[key] = s;
+        });
+      } catch(e) {}
+    }
+
+    // ── Auto-refresh loop ─────────────────────────────────────────────────────
+
+    function updateCountdown() {
+      const btn = document.getElementById('refreshBtn');
+      const textEl = document.getElementById('refreshText');
+      if (textEl && refreshCountdown > 0) {
+        textEl.textContent = `${refreshCountdown}s`;
+      }
+    }
+
+    async function silentRefresh() {
+      await fetchLiveScores(activeSport);
+      try {
+        const res = await fetch(`/api/predictions/${activeSport}`);
+        const data = await res.json();
+        if (!data.error) renderCards(data);
+      } catch(e) {}
+      try {
+        const res = await fetch(`/api/edge-bets/${activeSport}`);
+        const data = await res.json();
+        if (!data.error) renderValueBets(data);
+      } catch(e) {}
+    }
+
+    setInterval(() => {
+      refreshCountdown--;
+      updateCountdown();
+      if (refreshCountdown <= 0) {
+        refreshCountdown = REFRESH_INTERVAL;
+        silentRefresh();
+      }
+    }, 1000);
+
+    // ── Tennis ────────────────────────────────────────────────────────────────
+
+    let tennisRefreshInterval = null;
+    let tennisCountdown = 10;
+
+    function renderTennisMatches(matches) {
+      const el = document.getElementById('tennisCards');
+      const countEl = document.getElementById('tennisCount');
+      const live = matches.filter(m => m.is_live);
+      const upcoming = matches.filter(m => !m.is_live && !m.is_final);
+      countEl.textContent = `${live.length} live · ${upcoming.length} upcoming`;
+      if (!matches.length) {
+        el.innerHTML = `<div class="text-center py-12"><p class="text-gray-500 text-sm">No matches found</p></div>`;
+        return;
+      }
+      const show = [...live, ...upcoming].slice(0, 50);
+      el.innerHTML = show.map(m => {
+        const setScore = m.sets1.length
+          ? m.sets1.map((s, i) => `<span class="font-mono text-xs">${s}-${m.sets2[i] ?? 0}</span>`).join(' ')
+          : '';
+        const liveBadge = m.is_live
+          ? `<span class="text-xs font-bold px-2 py-0.5 rounded-full animate-pulse" style="background:rgba(220,38,38,0.15);border:1px solid rgba(220,38,38,0.3);color:#f87171">● LIVE Set ${m.period}</span>`
+          : `<span class="text-xs text-gray-600">${m.detail || 'Upcoming'}</span>`;
+        const winnerLine = m.winner ? `<p class="text-xs text-emerald-400 font-semibold mt-1">✓ ${m.winner} won</p>` : '';
+        return `
+          <div class="card rounded-2xl p-4">
+            <div class="flex justify-between items-start mb-2">
+              <div>
+                <p class="text-xs font-bold uppercase tracking-wide" style="color:#c9a84c">${m.tour} · ${m.tournament}</p>
+                <p class="text-xs text-gray-600">${m.round || ''}</p>
+              </div>
+              ${liveBadge}
+            </div>
+            <div class="flex justify-between items-center mt-2">
+              <div class="flex-1">
+                <p class="font-bold text-sm">${m.player1}${m.player1_seed ? ` <span class="text-gray-500 font-normal text-xs">[${m.player1_seed}]</span>` : ''}</p>
+                <p class="font-bold text-sm mt-1">${m.player2}${m.player2_seed ? ` <span class="text-gray-500 font-normal text-xs">[${m.player2_seed}]</span>` : ''}</p>
+              </div>
+              ${setScore ? `<div class="text-right space-y-1 ml-4">
+                ${m.sets1.map((s,i) => `<p class="font-mono text-sm font-bold ${s > (m.sets2[i]??0) ? 'text-white' : 'text-gray-600'}">${s}</p>`).join('')}
+              </div>
+              <div class="text-right space-y-1 ml-2">
+                ${m.sets2.map((s,i) => `<p class="font-mono text-sm font-bold ${s > (m.sets1[i]??0) ? 'text-white' : 'text-gray-600'}">${s}</p>`).join('')}
+              </div>` : ''}
+            </div>
+            ${winnerLine}
+            ${!m.is_final ? `
+            <button class="tennis-bet-btn mt-3 w-full py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95"
+              style="background:rgba(79,70,229,0.12);border:1px solid rgba(79,70,229,0.25);color:#a5b4fc"
+              data-match='${JSON.stringify({player1:m.player1, player2:m.player2, tournament:m.tournament})}'>
+              + Bet This Match
+            </button>
+            <div class="tennis-bet-form hidden mt-2 rounded-xl p-4 space-y-3 slide-down" style="background:rgba(79,70,229,0.07);border:1px solid rgba(79,70,229,0.2)">
+              <p class="text-xs text-gray-400 font-bold uppercase tracking-wide">Log Bet (enter Fanatics odds)</p>
+              <select class="tennis-pick w-full px-3 py-2.5 text-sm font-semibold rounded-lg">
+                <option value="${m.player1}">${m.player1}</option>
+                <option value="${m.player2}">${m.player2}</option>
+              </select>
+              <input type="number" inputmode="decimal" placeholder="Odds (e.g. -150 or +120)" class="tennis-odds w-full px-3 py-2.5 text-sm font-semibold rounded-lg" />
+              <input type="number" inputmode="decimal" min="1" placeholder="Stake ($)" class="tennis-stake w-full px-3 py-2.5 text-sm font-semibold rounded-lg" />
+              <button class="tennis-confirm btn-primary w-full py-3 rounded-xl text-sm font-bold active:scale-95 transition-transform">Confirm Bet</button>
+              <p class="tennis-status hidden text-center text-sm font-semibold"></p>
+            </div>` : ''}
+          </div>`;
+      }).join('');
+    }
+
+    async function loadTennisMatches(showLoader = false) {
+      if (showLoader) document.getElementById('tennisLoading').classList.remove('hidden');
+      try {
+        const res = await fetch('/api/tennis-matches');
+        const data = await res.json();
+        if (!data.error) renderTennisMatches(data);
+      } catch (_) {}
+      finally { document.getElementById('tennisLoading').classList.add('hidden'); }
+    }
+
+    function startTennisRefresh() {
+      tennisCountdown = 10;
+      clearInterval(tennisRefreshInterval);
+      tennisRefreshInterval = setInterval(async () => {
+        tennisCountdown--;
+        document.getElementById('tennisTimer').textContent = `Refresh in ${tennisCountdown}s`;
+        if (tennisCountdown <= 0) {
+          tennisCountdown = 10;
+          await loadTennisMatches();
+        }
+      }, 1000);
+    }
+
+    function stopTennisRefresh() {
+      clearInterval(tennisRefreshInterval);
+      tennisRefreshInterval = null;
+      document.getElementById('tennisTimer').textContent = '';
+    }
+
+    document.getElementById('tennisCards').addEventListener('click', async (e) => {
+      const betBtn = e.target.closest('.tennis-bet-btn');
+      if (betBtn) {
+        const form = betBtn.nextElementSibling;
+        form.classList.toggle('hidden');
+        return;
+      }
+      const confirmBtn = e.target.closest('.tennis-confirm');
+      if (confirmBtn) {
+        const form = confirmBtn.closest('.tennis-bet-form');
+        const card = form.closest('.card');
+        const matchData = JSON.parse(card.querySelector('.tennis-bet-btn').dataset.match);
+        const pick = form.querySelector('.tennis-pick').value;
+        const odds = parseFloat(form.querySelector('.tennis-odds').value);
+        const stake = parseFloat(form.querySelector('.tennis-stake').value);
+        const status = form.querySelector('.tennis-status');
+        if (!odds || !stake || stake <= 0) {
+          status.textContent = 'Enter valid odds and stake.';
+          status.className = 'tennis-status text-red-400 text-sm font-semibold text-center';
+          status.classList.remove('hidden');
+          return;
+        }
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Saving...';
+        try {
+          const res = await fetch('/api/bets', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sport: 'tennis',
+              home_team: matchData.player1,
+              away_team: matchData.player2,
+              predicted_winner: pick,
+              bet_on: pick,
+              odds,
+              stake,
+              commence_time: new Date().toISOString(),
+            }),
+          });
+          const data = await res.json();
+          if (data.error) throw new Error(data.error);
+          status.textContent = '✓ Bet logged!';
+          status.className = 'tennis-status text-emerald-400 text-sm font-semibold text-center';
+          status.classList.remove('hidden');
+          form.querySelector('.tennis-odds').value = '';
+          form.querySelector('.tennis-stake').value = '';
+          await loadMyBets();
+        } catch (err) {
+          status.textContent = `Error: ${err.message}`;
+          status.className = 'tennis-status text-red-400 text-sm font-semibold text-center';
+          status.classList.remove('hidden');
+        } finally {
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = 'Confirm Bet';
+        }
+      }
+    });
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+
+    fetchLiveScores(activeSport);
+    loadValueBets(activeSport);
+    loadPredictions(activeSport);
+    loadPlayerProps(activeSport);
+    loadGameProps(activeSport);
+    loadMyBets();
+    loadHistory();
+  </script>
+</body>
+</html>
