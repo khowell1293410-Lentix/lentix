@@ -30,6 +30,11 @@ def _api_error(e: Exception):
     return jsonify({"error": msg}), 500
 
 
+@app.route("/health")
+def health():
+    return jsonify({"status": "ok"}), 200
+
+
 @app.route("/")
 def index():
     return render_template("index.html", sports=SPORTS)
